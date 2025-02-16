@@ -1,6 +1,6 @@
 # Copyleft Nalle Berg 2025
 # License GPL V2
-AppVersion = '0.8.0'
+AppVersion = '0.8.1'
 
 # Importing modules
 import tkinter as tk					 
@@ -117,7 +117,7 @@ def main():
 
  
  	# For your own icon 
-	ICO = tk.PhotoImage(file=(resource_path("NSB-2021.PNG"))) 
+	ICO = tk.PhotoImage(file=(resource_path("info.png"))) 
 	Window.iconphoto(True, ICO)
 
 	# Getting the memory information

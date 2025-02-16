@@ -1,6 +1,6 @@
 # Copyleft Nalle Berg 2025
 # License GPL V2
-AppVersion = '0.8.0'
+AppVersion = '0.8.1'
 
 # Importing modules
 import tkinter as tk					 
@@ -35,7 +35,7 @@ def resource_path(relative_path):
 
 # Language file:
 # Norwegian: NO_nb_lang - English: EN_uk_lang
-exec(open(resource_path("NO_nb_lang"), encoding="utf-8").read())
+exec(open(resource_path("EN_uk_lang"), encoding="utf-8").read())
 
 def main():
     
