@@ -117,7 +117,7 @@ def main():
 
  
  	# For your own icon 
-	ICO = tk.PhotoImage(file=(resource_path("NSB-2021.PNG"))) 
+	ICO = tk.PhotoImage(file=(resource_path("info.png"))) 
 	Window.iconphoto(True, ICO)
 
 	# Getting the memory information
