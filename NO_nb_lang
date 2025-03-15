@@ -34,6 +34,7 @@ NetWorkgroupText = "Arbeidsgruppe:"
 # CPU tab
 CPUTitleText = "CPU\n"
 ProcessorText = "Prosessor"
+UnknownCPUText = "Ukjent prosessor type."
 PhysicKernelText = "Fysiske kjerner"
 TotalKernelText = "Totalt antall kjerner"
 PiecesText = "stykk"

@@ -32,6 +32,7 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
+    icon=['C:\\Users\\nalle\\Documents\\PythonWorkHome\\InfoWinApp\\info.ico'],
 )
 coll = COLLECT(
     exe,

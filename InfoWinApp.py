@@ -1,7 +1,6 @@
 # Copyleft Nalle Berg 2025
 # License GPL V2
-AppVersion = '0.9.2'
-
+AppVersion = '0.9.7'
 # Importing modules
 import tkinter as tk					 
 from tkinter import ttk
@@ -18,11 +17,63 @@ import webbrowser
 import locale
 import subprocess
 from screeninfo import get_monitors
-import uuid  
+import uuid 
+import winreg 
 import ctypes
 ctypes.windll.shcore.SetProcessDpiAwareness(1)  # Disable DPI scaling
 
 global i # I need it to bew global further down to use it in some functions
+
+# I must get the best version of the CPU type
+def get_processor_name():
+    try:
+        # Use PowerShell to get the processor name
+        command = 'powershell -command "Get-WmiObject Win32_Processor | Select-Object -ExpandProperty Name"'
+        output = subprocess.check_output(
+            command, 
+            shell=True, 
+            stderr=subprocess.STDOUT, 
+            universal_newlines=True
+        )
+        
+        # Extract the processor name from the output
+        processor_name = output.strip()
+        return processor_name
+    except Exception as e:
+        processor_name = UnknownCPUText
+    
+
+def get_windows_version():
+    """
+    Returns the Windows version in format like "24H2" by reading the DisplayVersion
+    from the Windows Registry.
+    
+    Returns:
+        str: The Windows display version (e.g., "24H2", "23H2")
+        or "Unknown" if version cannot be determined.
+    """
+    try:
+        # Open the registry key
+        key_path = r"SOFTWARE\Microsoft\Windows NT\CurrentVersion"
+        reg_key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, key_path)
+        
+        # Read the DisplayVersion value
+        display_version, _ = winreg.QueryValueEx(reg_key, "DisplayVersion")
+        
+        # Close the registry key
+        winreg.CloseKey(reg_key)
+        
+        return display_version
+    
+    except FileNotFoundError:
+        return "Unknown - Registry key not found"
+    except PermissionError:
+        return "Unknown - Access denied to registry"
+    except OSError as e:
+        return f"Unknown - OS error: {e}"
+    except Exception as e:
+        return f"Unknown - Error: {e}"
+versionOS = get_windows_version()
 
 # Making the app know it's path.
 def resource_path(relative_path):
@@ -30,15 +81,13 @@ def resource_path(relative_path):
 			base_path = sys._MEIPASS
 		except Exception:
 			base_path = os.path.abspath(".")
-
 		return os.path.join(base_path, relative_path)
 
 # Language file:
 # Norwegian: NO_nb_lang - English: EN_uk_lang
-exec(open(resource_path("EN_uk_lang"), encoding="utf-8").read())
+exec(open(resource_path("NO_nb_lang"), encoding="utf-8").read())
 
-def main():
-    
+def main():    
     # I use WMI for several things, so I also query in several ways.
     # This one gets used both on the «Network» and the «PC» page
 	c = wmi.WMI()    
@@ -80,8 +129,7 @@ def main():
 
     # Google to the rescue! It's always there.
 	OnInternet = is_connected('www.google.com')
-	
-    
+	  
 	# Making the app know it's path.
 	# Importing «os» here, since it for some rason had to be within main()
 	import os
@@ -176,7 +224,6 @@ def main():
     
 	swap_free = swap.free / (1024 * 1024 * 1024)
 	swapfree = f"{swap_free:.2f} GB".replace(',', ' ').replace('.', ',')
-
 
 	
 	if OnNetWork:
@@ -373,159 +420,58 @@ def main():
 	if not OnNetWork:
 		MacAddr = NoActiveCardText
  
-	ttk.Label(tab1, 
-		text = MacAddr+"\n ", anchor="nw").grid(column = 1, 
-									row = 9, 
-									padx = 10, 
-									pady = 3,
-                                    sticky='NESW') 
+	ttk.Label(tab1, text = MacAddr+"\n ", anchor="nw").grid(column = 1, row = 9, padx = 10, pady = 3,sticky='NESW') 
 
 	# Getting domain and workgroup
 	net_domain = my_system.Domain
 	net_workgroup = my_system.Workgroup
  
-	ttk.Label(tab1, 
-		text = NetDomainText, anchor="nw", font=("Verdana", 8, "bold")).grid(column = 0, 
-									row = 10, 
-									padx = 10, 
-									pady = 3,
-                                    sticky='NESW')
+	ttk.Label(tab1, text = NetDomainText, anchor="nw", font=("Verdana", 8, "bold")).grid(column = 0, row = 10, padx = 10, pady = 3, sticky='NESW')
 
 	if not OnNetWork:
 		net_domain = NoActiveCardText
  
-	ttk.Label(tab1, 
-		text = net_domain, anchor="nw").grid(column = 1, 
-									row = 10, 
-									padx = 10, 
-									pady = 3,
-                                    sticky='NESW') 
-	ttk.Label(tab1, 
-		text = NetWorkgroupText, anchor="nw", font=("Verdana", 8, "bold")).grid(column = 0, 
-									row = 11, 
-									padx = 10, 
-									pady = 3,
-                                    sticky='NESW')
+	ttk.Label(tab1, text = net_domain, anchor="nw").grid(column = 1, row = 10, padx = 10, pady = 3, sticky='NESW') 
+	ttk.Label(tab1, text = NetWorkgroupText, anchor="nw", font=("Verdana", 8, "bold")).grid(column = 0, row = 11, padx = 10, pady = 3, sticky='NESW')
 
 	if not OnNetWork:
 		net_domain = NoActiveCardText
  
-	ttk.Label(tab1, 
-		text = net_workgroup, anchor="nw").grid(column = 1, 
-									row = 11, 
-									padx = 10, 
-									pady = 3,
-                                    sticky='NESW') 
+	ttk.Label(tab1, text = net_workgroup, anchor="nw").grid(column = 1, row = 11, padx = 10, pady = 3, sticky='NESW') 
 
 
 
 ###########
 # CPU
-	ttk.Label(tab2, 
-		text = CPUTitleText, foreground="blue", font=("Verdana", 16, "bold")).grid(column = 0, 
-									row = 0, 
-									padx = 10, 
-									pady = 3,
-                                    columnspan=2)
+	# Calling the get_processor_Name to get
+	processor_name = get_processor_name()
+	ttk.Label(tab2, text = CPUTitleText, foreground="blue", font=("Verdana", 16, "bold")).grid(column = 0, row = 0, padx = 10, pady = 3, columnspan=2)
  
-	ttk.Label(tab2, 
-		text = ProcessorText, font=("Verdana", 8, "bold")).grid(column = 0, 
-			    					row = 1, 
-									padx = 10, 
-									pady = 3,
-                                    sticky='NESW') 
-	ttk.Label(tab2, 
-		text = CPUProc, anchor="nw", font=("Verdana", 8)).grid(column = 1, 
-									row = 1, 
-									padx = 10, 
-									pady = 3,
-                                    sticky='NESW',
-                                    columnspan=2)
-	ttk.Label(tab2, 
-		text = PhysicKernelText, font=("Verdana", 8, "bold")).grid(column = 0, 
-			    					row = 2, 
-									padx = 10, 
-									pady = 3,
-                                    sticky='NESW')
-	ttk.Label(tab2, 
-		text = psutil.cpu_count(logical=False), anchor="nw", font=("Verdana", 8)).grid(column = 1, 
-									row = 2, 
-									padx = 10, 
-									pady = 3,
-                                    sticky='NESW')
-	ttk.Label(tab2, 
-		text = PiecesText, anchor="nw", font=("Verdana", 8)).grid(column = 2, 
-									row = 2, 
-									padx = 10, 
-									pady = 3,
-                                    sticky='NESW')
-  
-	ttk.Label(tab2, 
-		text = TotalKernelText, font=("Verdana", 8, "bold")).grid(column = 0, 
-			    					row = 3, 
-									padx = 10, 
-									pady = 1,
-                                    sticky='NESW') 
-	ttk.Label(tab2, 
-		text = psutil.cpu_count(logical=True), anchor="nw", font=("Verdana", 8)).grid(column = 1, 
-									row = 3, 
-									padx = 10, 
-									pady = 1,
-                                    sticky='NESW')
-	ttk.Label(tab2, 
-		text = PiecesText, anchor="nw", font=("Verdana", 8)).grid(column = 2, 
-									row = 3, 
-									padx = 10, 
-									pady = 1,
-                                    sticky='NESW')
-  
-	ttk.Label(tab2, 
-		text = MaxCPUFreqText, font=("Verdana", 8, "bold")).grid(column = 0, 
-			    					row = 4, 
-									padx = 10, 
-									pady = 3,
-                                    sticky='NESW') 
-	ttk.Label(tab2, 
-		text = f"{cpufreq.max:.2f}", anchor="nw", font=("Verdana", 8)).grid(column = 1, 
-									row = 4, 
-									padx = 10, 
-									pady = 3,
-                                    sticky='NESW')
-	ttk.Label(tab2, 
-		text = MhzText, anchor="nw", font=("Verdana", 8)).grid(column = 2, 
-									row = 4, 
-									padx = 10, 
-									pady = 3,
-                                    sticky='NESW') 
-  
-  
-	ttk.Label(tab2, 
-		text = CurCPUFreqText, font=("Verdana", 8, "bold")).grid(column = 0, 
-			    					row = 5, 
-									padx = 10, 
-									pady = 3,
-                                    sticky='NESW')
-
-	ttk.Label(tab2, 
-		text = MhzText, anchor="nw", font=("Verdana", 8)).grid(column = 2, 
-									row = 5, 
-									padx = 10, 
-									pady = 3,
-                                    sticky='NESW')
-  
-	ttk.Label(tab2, 
-		text = CurCPUUsageText, font=("Verdana", 8, "bold")).grid(column = 0, 
-			    					row = 6, 
-									padx = 10, 
-									pady = 3,
-                                    sticky='NESW')
+	ttk.Label(tab2, text = ProcessorText, font=("Verdana", 8, "bold")).grid(column = 0, row = 1, padx = 10, pady = 3, sticky='NESW') 
 	
-	ttk.Label(tab2,
-		text = "%", anchor="nw", font=("Verdana", 8)).grid(column = 2, 
-									row = 6, 
-									padx = 10, 
-									pady = 3,
-                                    sticky='NESW')
+	ttk.Label(tab2, text = f"{processor_name}\n{CPUProc}", anchor="nw", font=("Verdana", 8)).grid(column = 1, row = 1, padx = 10, pady = 3, sticky='NESW', columnspan=2)
+	
+	ttk.Label(tab2, text = PhysicKernelText, font=("Verdana", 8, "bold")).grid(column = 0, row = 2, padx = 10, pady = 3, sticky='NESW')
+	
+	ttk.Label(tab2, text = psutil.cpu_count(logical=False), anchor="nw", font=("Verdana", 8)).grid(column = 1, row = 2, padx = 10, pady = 3, sticky='NESW')
+	ttk.Label(tab2, text = PiecesText, anchor="nw", font=("Verdana", 8)).grid(column = 2, row = 2, padx = 10, pady = 3, sticky='NESW')
+  
+	ttk.Label(tab2, text = TotalKernelText, font=("Verdana", 8, "bold")).grid(column = 0, row = 3, padx = 10, pady = 1, sticky='NESW') 
+	ttk.Label(tab2, text = psutil.cpu_count(logical=True), anchor="nw", font=("Verdana", 8)).grid(column = 1, row = 3, padx = 10, pady = 1, sticky='NESW')
+	ttk.Label(tab2, text = PiecesText, anchor="nw", font=("Verdana", 8)).grid(column = 2, row = 3, padx = 10, pady = 1, sticky='NESW')
+  
+	ttk.Label(tab2, text = MaxCPUFreqText, font=("Verdana", 8, "bold")).grid(column = 0, row = 4, padx = 10, pady = 3,sticky='NESW') 
+	ttk.Label(tab2, text = f"{cpufreq.max:.2f}", anchor="nw", font=("Verdana", 8)).grid(column = 1, row = 4, padx = 10, pady = 3, sticky='NESW')
+	ttk.Label(tab2, text = MhzText, anchor="nw", font=("Verdana", 8)).grid(column = 2, row = 4, padx = 10, pady = 3, sticky='NESW') 
+  
+  
+	ttk.Label(tab2, text = CurCPUFreqText, font=("Verdana", 8, "bold")).grid(column = 0, row = 5, padx = 10, pady = 3, sticky='NESW')
+
+	ttk.Label(tab2, text = MhzText, anchor="nw", font=("Verdana", 8)).grid(column = 2, row = 5, padx = 10, pady = 3,sticky='NESW')
+  
+	ttk.Label(tab2, text = CurCPUUsageText, font=("Verdana", 8, "bold")).grid(column = 0, row = 6, padx = 10, pady = 3, sticky='NESW')
+	
+	ttk.Label(tab2, text = "%", anchor="nw", font=("Verdana", 8)).grid(column = 2, row = 6, padx = 10, pady = 3, sticky='NESW')
 
 	def update_cpu_info(tab2):
 		def update():
@@ -561,99 +507,40 @@ def main():
   
  
  # Memory
-	ttk.Label(tab3, text = MemoryTitleText, foreground="blue", font=("Verdana", 16, "bold")).grid(column = 0, 
-							       row = 0, 
-							       padx = 10, 
-							       pady = 1,
-                                   columnspan=2) 
+	ttk.Label(tab3, text = MemoryTitleText, foreground="blue", font=("Verdana", 16, "bold")).grid(column = 0, row = 0, padx = 10, pady = 1, columnspan=2) 
  
-	ttk.Label(tab3, text = TotalMemoryText, font=("Verdana", 8, "bold")).grid(column = 0, 
-							       row = 1, 
-							       padx = 10, 
-							       pady = 1,
-                                   sticky='NESW') 
+	ttk.Label(tab3, text = TotalMemoryText, font=("Verdana", 8, "bold")).grid(column = 0, row = 1, padx = 10, pady = 1, sticky='NESW') 
  
-	ttk.Label(tab3, text = memsize, anchor="nw", font=("Verdana", 8)).grid(column = 1, 
-							       row = 1, 
-							       padx = 10, 
-							       pady = 1, 
-                                   sticky='NESW')
+	ttk.Label(tab3, text = memsize, anchor="nw", font=("Verdana", 8)).grid(column = 1, row = 1, padx = 10, pady = 1, sticky='NESW')
 
-	ttk.Label(tab3, text = UsedMemoryText, font=("Verdana", 8, "bold")).grid(column = 0, 
-							       row = 2, 
-							       padx = 10, 
-							       pady = 1,
-                                   sticky='NESW')
+	ttk.Label(tab3, text = UsedMemoryText, font=("Verdana", 8, "bold")).grid(column = 0, row = 2, padx = 10, pady = 1, sticky='NESW')
  
-	ttk.Label(tab3, text = memused, anchor="nw", font=("Verdana", 8)).grid(column = 1, 
-							       row = 2, 
-							       padx = 10, 
-							       pady = 1, 
-                                   sticky='NESW')
+	ttk.Label(tab3, text = memused, anchor="nw", font=("Verdana", 8)).grid(column = 1, row = 2, padx = 10, pady = 1, sticky='NESW')
  
-	ttk.Label(tab3, text = FreeMemoryText, font=("Verdana", 8, "bold")).grid(column = 0, 
-							       row = 3, 
-							       padx = 10, 
-							       pady = 1,
-                                   sticky='NESW')
+	ttk.Label(tab3, text = FreeMemoryText, font=("Verdana", 8, "bold")).grid(column = 0, row = 3, padx = 10, pady = 1, sticky='NESW')
  
-	ttk.Label(tab3, text = memfree, anchor="nw", font=("Verdana", 8)).grid(column = 1, 
-							       row = 3, 
-							       padx = 10, 
-							       pady = 1, 
-                                   sticky='NESW')
+	ttk.Label(tab3, text = memfree, anchor="nw", font=("Verdana", 8)).grid(column = 1, row = 3, padx = 10, pady = 1, sticky='NESW')
 
-	ttk.Label(tab3, text = "", font=("Verdana", 8)).grid(column = 0, 
-							       row = 4, 
-							       padx = 10, 
-							       pady = 1,
-                                   sticky='NESW')
+	ttk.Label(tab3, text = "", font=("Verdana", 8)).grid(column = 0, row = 4, padx = 10, pady = 1, sticky='NESW')
 
-	ttk.Label(tab3, text = "", font=("Verdana", 8), anchor="nw").grid(column = 1, 
-							       row = 5, 
-							       padx = 10, 
-							       pady = 1, 
-                                   sticky='NESW')
+	ttk.Label(tab3, text = "", font=("Verdana", 8), anchor="nw").grid(column = 1, row = 5, padx = 10, pady = 1, sticky='NESW')
 
-	ttk.Label(tab3, text = SwapTitle, foreground="blue", font=("Verdana", 16, "bold")).grid(column = 0, 
-							       row = 5, 
-							       padx = 10, 
-							       pady = 1,
-                                   columnspan=2)
+	ttk.Label(tab3, text = SwapTitle, foreground="blue", font=("Verdana", 16, "bold")).grid(column = 0, row = 5, padx = 10, pady = 1, columnspan=2)
 
-	ttk.Label(tab3, text = TotalSwapText, font=("Verdana", 8, "bold")).grid(column = 0, 
-							       row = 6, 
-							       padx = 10, 
-							       pady = 1,
-                                   sticky='NESW')
+	ttk.Label(tab3, text = TotalSwapText, font=("Verdana", 8, "bold")).grid(column = 0, row = 6, padx = 10, pady = 1, sticky='NESW')
  
  
-	ttk.Label(tab3, text = UsedSwapText, font=("Verdana", 8, "bold")).grid(column = 0, 
-							       row = 7, 
-							       padx = 10, 
-							       pady = 1,
-                                   sticky='NESW') # Used swap
+	ttk.Label(tab3, text = UsedSwapText, font=("Verdana", 8, "bold")).grid(column = 0, row = 7, padx = 10, pady = 1, sticky='NESW') 
  
  
-	ttk.Label(tab3, text = FreeSwapText, font=("Verdana", 8, "bold")).grid(column = 0, 
-							       row = 8, 
-							       padx = 10, 
-							       pady = 1,
-                                   sticky='NESW') 
+	ttk.Label(tab3, text = FreeSwapText, font=("Verdana", 8, "bold")).grid(column = 0, row = 8, padx = 10, pady = 1, sticky='NESW') 
  
 	
-	ttk.Label(tab3, text = "").grid(column = 0, 
-							       row = 9, 
-							       padx = 10, 
-							       pady = 1,
-                                   sticky='NESW')
+	ttk.Label(tab3, text = "").grid(column = 0, row = 9, padx = 10, pady = 1, sticky='NESW')
 
-	ttk.Label(tab3, text = "").grid(column = 1, 
-							       row = 9, 
-							       padx = 10, 
-							       pady = 1, 
-                                   sticky='NESW')
-	# After looking up the values we now make them update themselves every second
+	ttk.Label(tab3, text = "").grid(column = 1, row = 9, padx = 10, pady = 1, sticky='NESW')
+	
+ 	# After looking up the values we now make them update themselves every second
 	def update_memory_info(tab3):
 		def update():
 			# Fetch current memory information
@@ -724,49 +611,19 @@ def main():
   
  ########################
 # Disk
-	ttk.Label(tab4, 
-    	text=DiskTitleText, foreground="blue", font=("Verdana", 16, "bold")).grid(column=0, 
-                                row=0, 
-                                padx=10, 
-                                pady=3,
-                                columnspan=5) 
+	ttk.Label(tab4, text=DiskTitleText, foreground="blue", font=("Verdana", 16, "bold")).grid(column=0, row=0, padx=10, pady=3, columnspan=5) 
 
-	ttk.Label(tab4, 
-    	text=DiskText, font=("Verdana", 8, "bold")).grid(column=0, 
-                                row=1, 
-                                padx=10, 
-                                pady=3) 
+	ttk.Label(tab4, text=DiskText, font=("Verdana", 8, "bold")).grid(column=0, row=1, padx=10, pady=3) 
 
-	ttk.Label(tab4, 
-    	text=DiskFStypeText, font=("Verdana", 8, "bold")).grid(column=1, 
-                                row=1, 
-                                padx=10, 
-                                pady=3) 
+	ttk.Label(tab4, text=DiskFStypeText, font=("Verdana", 8, "bold")).grid(column=1, row=1, padx=10, pady=3) 
 
-	ttk.Label(tab4, 
-    	text=TotalDiskSpaceText, font=("Verdana", 8, "bold")).grid(column=2, 
-                                row=1, 
-                                padx=10, 
-                                pady=3) 
+	ttk.Label(tab4, text=TotalDiskSpaceText, font=("Verdana", 8, "bold")).grid(column=2, row=1, padx=10, pady=3) 
 
-	ttk.Label(tab4, 
-	    text=UsedDiskSpaceText, font=("Verdana", 8, "bold")).grid(column=3, 
-                                row=1, 
-                                padx=10, 
-                                pady=3) 
+	ttk.Label(tab4, text=UsedDiskSpaceText, font=("Verdana", 8, "bold")).grid(column=3, row=1, padx=10, pady=3) 
 
-	ttk.Label(tab4, 
-    	text=FreeDiskSpaceText, font=("Verdana", 8, "bold")).grid(column=4, 
-                                row=1, 
-                                padx=10, 
-                                pady=3, 
-                                sticky='NESW') 
+	ttk.Label(tab4, text=FreeDiskSpaceText, font=("Verdana", 8, "bold")).grid(column=4, row=1, padx=10, pady=3, sticky='NESW') 
 
-	ttk.Label(tab4, 
-    	text=FreeDiskSpacePercentText, font=("Verdana", 8, "bold")).grid(column=5, 
-                                row=1, 
-                                padx=10, 
-                                pady=3)
+	ttk.Label(tab4, text=FreeDiskSpacePercentText, font=("Verdana", 8, "bold")).grid(column=5, row=1, padx=10, pady=3)
 
 	# Dictionary to store disk labels for dynamic updates
 	disk_labels = {}
@@ -850,43 +707,13 @@ def main():
 		#checking the file system type
 		FsType = disk.fstype
 		
-		ttk.Label(tab4, 
-				text = CleanDiskLetter + ":").grid(column = 0, 
-									row = i+2, 
-									padx = 10, 
-									pady = 3,
-         							sticky='NESW') 
-		ttk.Label(tab4, 
-				text = FsType).grid(column = 1, 
-									row = i+2, 
-									padx = 10, 
-									pady = 3,
-         							sticky='NESW') 
+		ttk.Label(tab4, text = CleanDiskLetter + ":").grid(column = 0, row = i+2, padx = 10, pady = 3, sticky='NESW') 
+		ttk.Label(tab4, text = FsType).grid(column = 1, row = i+2, padx = 10, pady = 3, sticky='NESW') 
 
-		ttk.Label(tab4, 
-				text = HddTotal, anchor="ne").grid(column = 2, 
-									row = i+2, 
-									padx = 10, 
-									pady = 3,	
-         							sticky='NESW') 
-		ttk.Label(tab4, 
-				text = HddUsed, anchor="ne").grid(column = 3, 
-									row = i+2, 
-									padx = 10, 
-									pady = 3,	
-         							sticky='NESW') 
-		ttk.Label(tab4, 
-				text = HddFree, anchor="ne").grid(column = 4, 
-									row = i+2, 
-									padx = 10, 
-									pady = 3,	
-         							sticky='NESW') 
-		ttk.Label(tab4, 
-				text = HddPercent, anchor="ne").grid(column = 5, 
-									row = i+2, 
-									padx = 10, 
-									pady = 3,	
-         							sticky='NESW')
+		ttk.Label(tab4, text = HddTotal, anchor="ne").grid(column = 2, row = i+2, padx = 10, pady = 3,	sticky='NESW') 
+		ttk.Label(tab4, text = HddUsed, anchor="ne").grid(column = 3, row = i+2, padx = 10, pady = 3, sticky='NESW') 
+		ttk.Label(tab4, text = HddFree, anchor="ne").grid(column = 4, row = i+2, padx = 10, pady = 3, sticky='NESW') 
+		ttk.Label(tab4, text = HddPercent, anchor="ne").grid(column = 5, row = i+2, padx = 10, pady = 3, sticky='NESW')
 		
 	
 	wmi_obj_1 = wmi.WMI(namespace='root/Microsoft/Windows/Storage')
@@ -896,158 +723,38 @@ def main():
 	# below the dqata about the disk
 	k = j+1
 	# Description line after one empty line
-	ttk.Label(tab4, 
-				text = "", anchor="nw").grid(column = 0, 
-									row = i+4, 
-									padx = 10, 
-									pady = 3,	
-         							sticky='NESW', 
-                					columnspan = 6)
-	ttk.Label(tab4, 
-				text = DiskIDText, font=("Verdana", 8, "bold")).grid(column = 0, 
-									row = i+5, 
-									padx = 10, 
-									pady = 3)
-	ttk.Label(tab4, 
-				text = DiskModelText, font=("Verdana", 8, "bold"), anchor="nw").grid(column = 1, 
-									row = i+5, 
-									padx = 10, 
-									pady = 3, 
-         							columnspan = 2) 
-	ttk.Label(tab4, 
-				text = DiskBusTypeText, font=("Verdana", 8, "bold"), anchor="nw").grid(column = 3, 
-									row = i+5, 
-									padx = 10, 
-									pady = 3) 
-	ttk.Label(tab4, 
-				text = MediaTypeText, font=("Verdana", 8, "bold"), anchor="nw").grid(column = 4, 
-									row = i+5, 
-									padx = 10, 
-									pady = 3,	
-         							sticky='NESW')
-	ttk.Label(tab4, 
-				text = FirmwareVersionText, font=("Verdana", 8, "bold"), anchor="nw").grid(column = 5, 
-									row = i+5, 
-									padx = 10, 
-									pady = 3,	
-         							sticky='NESW') 
+	ttk.Label(tab4, text = "", anchor="nw").grid(column = 0, row = i+4, padx = 10, pady = 3, sticky='NESW', columnspan = 6)
+	ttk.Label(tab4, text = DiskIDText, font=("Verdana", 8, "bold")).grid(column = 0, row = i+5, padx = 10, pady = 3)
+	ttk.Label(tab4, text = DiskModelText, font=("Verdana", 8, "bold"), anchor="nw").grid(column = 1, row = i+5, padx = 10, pady = 3, columnspan = 2) 
+	ttk.Label(tab4, text = DiskBusTypeText, font=("Verdana", 8, "bold"), anchor="nw").grid(column = 3, row = i+5, padx = 10, pady = 3) 
+	ttk.Label(tab4, text = MediaTypeText, font=("Verdana", 8, "bold"), anchor="nw").grid(column = 4, row = i+5, padx = 10, pady = 3, sticky='NESW')
+	ttk.Label(tab4, text = FirmwareVersionText, font=("Verdana", 8, "bold"), anchor="nw").grid(column = 5, row = i+5, padx = 10, pady = 3, sticky='NESW') 
     
 	for d in wmi_obj_1.MSFT_PhysicalDisk():
 		MediaTypeName = [UnspecifiedText, "", "", HDDText, SSDText, SCMText]
 		BusTypeName =[UnknownBusTypeText, SCSIText, ATAPText, ATAText, IEEE1394Text, SSAText, FibreChannelText, USBText, RAIDText, iSCSIText, SASText, SATAText, SDText, MMCText, MAXText, FileSupportedViritualText, StorageSpacesText, NVMEText, SCMText, UFSText, MSReservedText] 
 		HealthStatusMeaning = [HealtStatusOKText, HealthStausWarningText, HealthStatusUnhealtyText, "", "", HealthStausUnknownText] 
 		j = j + 1
-		ttk.Label(tab4, 
-				text = DiskIDText + d.DeviceID , anchor="nw", font=("Verdana", 8)).grid(column = 0, 
-									row = i+j+2, 
-									padx = 10, 
-									pady = 3,	
-         							sticky='NESW')
-		ttk.Label(tab4, 
-				text = d.Model, font=("Verdana", 8), anchor="nw").grid(column = 1, 
-									row = i+j+2, 
-									padx = 10, 
-									pady = 3,	
-         							sticky='NESW', columnspan = 2)
-		ttk.Label(tab4, 
-				text = BusTypeName[d.BusType], font=("Verdana", 8), anchor="nw").grid(column = 3, 
-									row = i+j+2, 
-									padx = 10, 
-									pady = 3,	
-         							sticky='NESW')
-		ttk.Label(tab4, 
-				text = MediaTypeName[d.MediaType], font=("Verdana", 8), anchor="nw").grid(column = 4, 
-									row = i+j+2, 
-									padx = 10, 
-									pady = 3,	
-         							sticky='NESW') 
-		ttk.Label(tab4, 
-				text = d.FirmwareVersion, anchor="nw", font=("Verdana", 8)).grid(column = 5, 
-									row = i+j+2, 
-									padx = 10, 
-									pady = 3,	
-         							sticky='NESW')
-		ttk.Label(tab4, 
-				text = DiskDeviceHelathStaus1Text + d.DeviceID + DiskDeviceHelathStaus2Text, font=("Verdana", 8, "bold"), anchor="nw").grid(column = 0, 
-									row = i+j+k, 
-									padx = 10, 
-									pady = 3,	
-         							sticky='NESW', columnspan = 2)
-		ttk.Label(tab4, 
-				text = HealthStatusMeaning[d.HealthStatus], anchor="nw", font=("Verdana", 8)).grid(column = 2, 
-									row = i+j+k, 
-									padx = 10, 
-									pady = 3,	
-         							sticky='NESW',
-                					columnspan=3)
+		ttk.Label(tab4, text = DiskIDText + d.DeviceID , anchor="nw", font=("Verdana", 8)).grid(column = 0, row = i+j+2, padx = 10, pady = 3, sticky='NESW')
+		ttk.Label(tab4, text = d.Model, font=("Verdana", 8), anchor="nw").grid(column = 1, row = i+j+2, padx = 10, pady = 3, sticky='NESW', columnspan = 2)
+		ttk.Label(tab4, text = BusTypeName[d.BusType], font=("Verdana", 8), anchor="nw").grid(column = 3, row = i+j+2, padx = 10, pady = 3, sticky='NESW')
+		ttk.Label(tab4, text = MediaTypeName[d.MediaType], font=("Verdana", 8), anchor="nw").grid(column = 4, row = i+j+2, padx = 10, pady = 3, sticky='NESW') 
+		ttk.Label(tab4, text = d.FirmwareVersion, anchor="nw", font=("Verdana", 8)).grid(column = 5, row = i+j+2, padx = 10, pady = 3, sticky='NESW')
+		ttk.Label(tab4, text = DiskDeviceHelathStaus1Text + d.DeviceID + DiskDeviceHelathStaus2Text, font=("Verdana", 8, "bold"), anchor="nw").grid(column = 0, row = i+j+k, padx = 10, pady = 3, sticky='NESW', columnspan = 2)
+		ttk.Label(tab4, text = HealthStatusMeaning[d.HealthStatus], anchor="nw", font=("Verdana", 8)).grid(column = 2, row = i+j+k, padx = 10, pady = 3, sticky='NESW',columnspan=3)
   
 	# Operating system
-	ttk.Label(tab5, 
-			text = OperatingSystemTitleText, foreground="blue", font=("Verdana", 16, "bold")).grid(column = 0, 
-									row = 0, 
-									padx = 10, 
-									pady = 3,
-                					columnspan=2) 
-	ttk.Label(tab5, 
-			text = OperatingSystemText, anchor="nw", font=("Verdana", 8, "bold")).grid(column = 0, 
-									row = 1, 
-									padx = 10, 	
-									pady = 3,	
-         							sticky='NESW') 
-	ttk.Label(tab5, 
-			text = OSName, anchor="nw", font=("Verdana", 8)).grid(column = 1, 
-									row = 1, 
-									padx = 10, 
-									pady = 3,	
-         							sticky='NESW') 
-	ttk.Label(tab5, 
-			text = OSVersionText, anchor="nw", font=("Verdana", 8, "bold")).grid(column = 0, 
-									row = 2, 
-									padx = 10, 	
-									pady = 3,	
-         							sticky='NESW')
-	ttk.Label(tab5, 
-			text = OSVersion, anchor="nw", font=("Verdana", 8)).grid(column = 1, 
-									row = 2, 
-									padx = 10, 
-									pady = 3,	
-         							sticky='NESW') 
-	ttk.Label(tab5, 
-			text = ForMachineTypeText, anchor="nw", font=("Verdana", 8, "bold")).grid(column = 0, 
-									row = 3, 
-									padx = 10, 	
-									pady = 3,	
-         							sticky='NESW') # For machine type
-	ttk.Label(tab5, 
-			text = OSMachine, anchor="nw", font=("Verdana", 8)).grid(column = 1, 
-									row = 3, 
-									padx = 10, 
-									pady = 3,	
-         							sticky='NESW')
-	ttk.Label(tab5, 
-			text = OSLanguageText, anchor="nw", font=("Verdana", 8, "bold")).grid(column = 0, 
-									row = 4, 
-									padx = 10, 	
-									pady = 3,	
-         							sticky='NESW') # For machine type
-	ttk.Label(tab5, 
-			text = loc[0], anchor="nw", font=("Verdana", 8)).grid(column = 1, 
-									row = 4, 
-									padx = 10, 
-									pady = 3,	
-         							sticky='NESW')  
-	ttk.Label(tab5, 
-			text = OSCodePageText, anchor="nw", font=("Verdana", 8, "bold")).grid(column = 0, 
-									row = 5, 
-									padx = 10, 	
-									pady = 3,	
-         							sticky='NESW') # For machine type
-	ttk.Label(tab5, 
-			text = enc, anchor="nw", font=("Verdana", 8)).grid(column = 1, 
-									row = 5, 
-									padx = 10, 
-									pady = 3,	
-         							sticky='NESW') 
+	ttk.Label(tab5, text = OperatingSystemTitleText, foreground="blue", font=("Verdana", 16, "bold")).grid(column = 0, row = 0, padx = 10, pady = 3,columnspan=2) 
+	ttk.Label(tab5, text = OperatingSystemText, anchor="nw", font=("Verdana", 8, "bold")).grid(column = 0, row = 1, padx = 10, pady = 3, sticky='NESW') 
+	ttk.Label(tab5, text = OSName, anchor="nw", font=("Verdana", 8)).grid(column = 1, row = 1, padx = 10, pady = 3,	sticky='NESW') 
+	ttk.Label(tab5, text = OSVersionText, anchor="nw", font=("Verdana", 8, "bold")).grid(column = 0, row = 2, padx = 10, pady = 3, sticky='NESW')
+	ttk.Label(tab5, text = f"{versionOS} - {OSVersion}", anchor="nw", font=("Verdana", 8)).grid(column = 1, row = 2, padx = 10, pady = 3, sticky='NESW') 
+	ttk.Label(tab5, text = ForMachineTypeText, anchor="nw", font=("Verdana", 8, "bold")).grid(column = 0, row = 3, padx = 10, pady = 3,	sticky='NESW') # For machine type
+	ttk.Label(tab5, text = OSMachine, anchor="nw", font=("Verdana", 8)).grid(column = 1, row = 3, padx = 10, pady = 3, sticky='NESW')
+	ttk.Label(tab5, text = OSLanguageText, anchor="nw", font=("Verdana", 8, "bold")).grid(column = 0, row = 4, padx = 10, pady = 3,	sticky='NESW') # For machine type
+	ttk.Label(tab5, text = loc[0], anchor="nw", font=("Verdana", 8)).grid(column = 1, row = 4, padx = 10, pady = 3,	sticky='NESW')  
+	ttk.Label(tab5, text = OSCodePageText, anchor="nw", font=("Verdana", 8, "bold")).grid(column = 0, row = 5, padx = 10, pady = 3,	sticky='NESW') # For machine type
+	ttk.Label(tab5, text = enc, anchor="nw", font=("Verdana", 8)).grid(column = 1, row = 5, padx = 10, pady = 3, sticky='NESW') 
    
 ###############
 # Graphics page
@@ -1083,12 +790,7 @@ def main():
 	next(reader)  # Skip the header row
 	
  
-	ttk.Label(tab6, 
-    	text=GraphicTitleText, foreground="blue", font=("Verdana", 16, "bold")).grid(column=0, 
-                                row=0, 
-                                padx=10, 
-                                pady=3,
-                                columnspan=2) 
+	ttk.Label(tab6, text=GraphicTitleText, foreground="blue", font=("Verdana", 16, "bold")).grid(column=0, row=0, padx=10, pady=3, columnspan=2) 
 
     # Loop through each video card
 	counter = 0
@@ -1108,54 +810,14 @@ def main():
 			formatted_colors = f"{current_colors:,}".replace(",", " ") # There will be no decimals here
 			
 			# Displaying what we've found
-			ttk.Label(tab6, 
-				text = GraphicCardNumberText, anchor="nw", font=("Verdana", 8, "bold")).grid(column = 0, 
-									row = counter + morecards +1, 
-									padx = 10, 	
-									pady = 3,	
-         							sticky='NESW') 
-			ttk.Label(tab6, 
-				text = counter + 1, anchor="nw", font=("Verdana", 8)).grid(column = 1, 
-									row = counter + morecards + 1, 
-									padx = 10, 
-									pady = 3,	
-         							sticky='NESW')
-			ttk.Label(tab6, 
-				text = GraphicCardNameText, anchor="nw", font=("Verdana", 8, "bold")).grid(column = 0, 
-									row = counter + morecards + 2, 
-									padx = 10, 	
-									pady = 3,	
-         							sticky='NESW') 
-			ttk.Label(tab6, 
-				text = name, anchor="nw", font=("Verdana", 8)).grid(column = 1, 
-									row = counter + morecards + 2, 
-									padx = 10, 
-									pady = 3,	
-         							sticky='NESW')
-			ttk.Label(tab6, 
-				text = GraphicCardRAMText, anchor="nw", font=("Verdana", 8, "bold")).grid(column = 0, 
-									row = counter + morecards + 2, 
-									padx = 10, 	
-									pady = 3,	
-         							sticky='NESW') 
-			ttk.Label(tab6, 
-				text = f"{formatted_ram_gb} GB", anchor="nw", font=("Verdana", 8)).grid(column = 1, 
-									row = counter + morecards + 3, 
-									padx = 10, 
-									pady = 3,	
-         							sticky='NESW')
-			ttk.Label(tab6, 
-				text = GraphicCardVideoModeText, anchor="nw", font=("Verdana", 8, "bold")).grid(column = 0, 
-									row = counter + morecards + 4, 
-									padx = 10, 	
-									pady = 3,	
-         							sticky='NESW') 
-			ttk.Label(tab6, 
-				text = GraphicCardVideoModeText, anchor="nw", font=("Verdana", 8, "bold")).grid(column = 0, 
-									row = counter + morecards + 4, 
-									padx = 10, 	
-									pady = 3,	
-         							sticky='NESW')
+			ttk.Label(tab6, text = GraphicCardNumberText, anchor="nw", font=("Verdana", 8, "bold")).grid(column = 0, row = counter + morecards +1, padx = 10, pady = 3,	sticky='NESW') 
+			ttk.Label(tab6, text = counter + 1, anchor="nw", font=("Verdana", 8)).grid(column = 1, row = counter + morecards + 1, padx = 10, pady = 3,	sticky='NESW')
+			ttk.Label(tab6, text = GraphicCardNameText, anchor="nw", font=("Verdana", 8, "bold")).grid(column = 0, row = counter + morecards + 2, padx = 10, pady = 3, sticky='NESW') 
+			ttk.Label(tab6, text = name, anchor="nw", font=("Verdana", 8)).grid(column = 1, row = counter + morecards + 2, padx = 10, pady = 3,	sticky='NESW')
+			ttk.Label(tab6, text = GraphicCardRAMText, anchor="nw", font=("Verdana", 8, "bold")).grid(column = 0, row = counter + morecards + 2, padx = 10, pady = 3, sticky='NESW') 
+			ttk.Label(tab6, text = f"{formatted_ram_gb} GB", anchor="nw", font=("Verdana", 8)).grid(column = 1, row = counter + morecards + 3, padx = 10, pady = 3,	sticky='NESW')
+			ttk.Label(tab6, text = GraphicCardVideoModeText, anchor="nw", font=("Verdana", 8, "bold")).grid(column = 0, row = counter + morecards + 4, padx = 10, pady = 3,	sticky='NESW') 
+			ttk.Label(tab6, text = GraphicCardVideoModeText, anchor="nw", font=("Verdana", 8, "bold")).grid(column = 0, row = counter + morecards + 4, padx = 10, pady = 3,	sticky='NESW')
 			
 			# If the card has no video modes the line will stay empty
 			# In some mechines (like mine), There is a grphics card and a GPU
@@ -1163,56 +825,16 @@ def main():
 			if video_mode == "":
 				video_mode = NoneText
     
-			ttk.Label(tab6, 
-				text = video_mode, anchor="nw", font=("Verdana", 8)).grid(column = 1, 
-									row = counter + morecards + 4, 
-									padx = 10, 
-									pady = 3,	
-         							sticky='NESW')
-			ttk.Label(tab6, 
-				text = GraphicCardColorsText, anchor="nw", font=("Verdana", 8, "bold")).grid(column = 0, 
-									row = counter + morecards + 5, 
-									padx = 10, 	
-									pady = 3,	
-         							sticky='NESW') 
-			ttk.Label(tab6, 
-				text = formatted_colors, anchor="nw", font=("Verdana", 8)).grid(column = 1, 
-									row = counter + morecards + 5, 
-									padx = 10, 
-									pady = 3,	
-         							sticky='NESW')
-			ttk.Label(tab6, 
-				text = GraphicCardPNPDeviceIDText, anchor="nw", font=("Verdana", 8, "bold")).grid(column = 0, 
-									row = counter + morecards + 6, 
-									padx = 10, 	
-									pady = 3,	
-         							sticky='NESW') 
-			ttk.Label(tab6, 
-				text = pnp_device_id, anchor="nw", font=("Verdana", 8)).grid(column = 1, 
-									row = counter + morecards + 6, 
-									padx = 10, 
-									pady = 3,	
-         							sticky='NESW')
-			ttk.Label(tab6, 
-				text = GraphicCardBitsPerPixelText, anchor="nw", font=("Verdana", 8, "bold")).grid(column = 0, 
-									row = counter + morecards + 7, 
-									padx = 10, 	
-									pady = 3,	
-         							sticky='NESW') 
-			ttk.Label(tab6, 
-				text = bits_per_pixel, anchor="nw", font=("Verdana", 8)).grid(column = 1, 
-									row = counter + morecards + 7, 
-									padx = 10, 
-									pady = 3,	
-         							sticky='NESW')
+			ttk.Label(tab6, text = video_mode, anchor="nw", font=("Verdana", 8)).grid(column = 1, row = counter + morecards + 4, padx = 10, pady = 3, sticky='NESW')
+			ttk.Label(tab6, text = GraphicCardColorsText, anchor="nw", font=("Verdana", 8, "bold")).grid(column = 0, row = counter + morecards + 5, padx = 10, pady = 3, sticky='NESW') 
+			ttk.Label(tab6, text = formatted_colors, anchor="nw", font=("Verdana", 8)).grid(column = 1, row = counter + morecards + 5, padx = 10, pady = 3,	sticky='NESW')
+			ttk.Label(tab6, text = GraphicCardPNPDeviceIDText, anchor="nw", font=("Verdana", 8, "bold")).grid(column = 0, row = counter + morecards + 6, padx = 10, pady = 3, sticky='NESW') 
+			ttk.Label(tab6, text = pnp_device_id, anchor="nw", font=("Verdana", 8)).grid(column = 1, row = counter + morecards + 6, padx = 10, pady = 3, sticky='NESW')
+			ttk.Label(tab6, text = GraphicCardBitsPerPixelText, anchor="nw", font=("Verdana", 8, "bold")).grid(column = 0, row = counter + morecards + 7, padx = 10, pady = 3, sticky='NESW') 
+			ttk.Label(tab6, text = bits_per_pixel, anchor="nw", font=("Verdana", 8)).grid(column = 1, row = counter + morecards + 7, padx = 10, pady = 3, sticky='NESW')
 			
 			# Separator line
-			ttk.Label(tab6, 
-				text = " ", anchor="center", font=("Verdana", 8, "bold")).grid(column = 0, 
-									row = counter + morecards + 8, 
-									padx = 10, 	
-									pady = 3,	
-         							sticky='NESW', columnspan=2) 
+			ttk.Label(tab6, text = " ", anchor="center", font=("Verdana", 8, "bold")).grid(column = 0, row = counter + morecards + 8, padx = 10, pady = 3, sticky='NESW', columnspan=2) 
 			# Counters for placement of the grid
 			counter = counter + 1
 			morecards = counter + 7
@@ -1289,82 +911,24 @@ def main():
 		simplified_height_ratio = best_height_ratio // common_divisor
 
 
-	ttk.Label(tab7, 
-        	text = ScreenTitleText, foreground="blue", font=("Verdana", 16, "bold")).grid(column = 0, 
-									row = 0, 
-									padx = 10, 
-									pady = 3,	
-         						#	sticky='NESW',
-                					columnspan=2)	
+	ttk.Label(tab7, text = ScreenTitleText, foreground="blue", font=("Verdana", 16, "bold")).grid(column = 0, row = 0, padx = 10, pady = 3,	columnspan=2)	
 
 	# Setting counters
 	s_counter = 0
 	S_morescreens  = 6
 	for m in monitors:
-		ttk.Label(tab7, 
-				text = ScreenNameText, anchor="nw", font=("Verdana", 8, "bold")).grid(column = 0, 
-									row = s_counter + S_morescreens + 1, 
-									padx = 10, 	
-									pady = 3,	
-         							sticky='NESW') 
-		ttk.Label(tab7, 
-				text = s_name, anchor="nw", font=("Verdana", 8)).grid(column = 1, 
-									row = s_counter + S_morescreens + 1, 
-									padx = 10, 
-									pady = 3,	
-         							sticky='NESW', 
-                					columnspan=2)
+		ttk.Label(tab7, text = ScreenNameText, anchor="nw", font=("Verdana", 8, "bold")).grid(column = 0, row = s_counter + S_morescreens + 1, padx = 10, pady = 3,	sticky='NESW') 
+		ttk.Label(tab7, text = s_name, anchor="nw", font=("Verdana", 8)).grid(column = 1, row = s_counter + S_morescreens + 1, padx = 10, pady = 3,	sticky='NESW', columnspan=2)
     
-		ttk.Label(tab7, 
-				text = ScreenResText, anchor="nw", font=("Verdana", 8, "bold")).grid(column = 0, 
-									row = s_counter + S_morescreens + 2, 
-									padx = 10, 	
-									pady = 3,	
-         							sticky='NESW') 
-		ttk.Label(tab7, 
-				text = f"{s_width:,.0f} x {s_height:,.0f}", anchor="nw", font=("Verdana", 8)).grid(column = 1, 
-									row = s_counter + S_morescreens + 2, 
-									padx = 10, 
-									pady = 3,	
-         							sticky='NESW')  
-		ttk.Label(tab7, 
-				text = PxText, anchor="nw", font=("Verdana", 8)).grid(column = 2, 
-									row = s_counter + S_morescreens + 2, 
-									padx = 10, 
-									pady = 3,	
-         							sticky='NESW')
-		ttk.Label(tab7, 
-				text = ScreenSizeText, anchor="nw", font=("Verdana", 8, "bold")).grid(column = 0, 
-									row = s_counter + S_morescreens + 3, 
-									padx = 10, 	
-									pady = 3,	
-         							sticky='NESW') 
-		ttk.Label(tab7, 
-				text = f"{s_width_mm} x {s_height_mm}", anchor="nw", font=("Verdana", 8)).grid(column = 1, 
-									row = s_counter + S_morescreens + 3, 
-									padx = 10, 
-									pady = 3,	
-         							sticky='NESW')   
-		ttk.Label(tab7, 
-				text = MmText, anchor="nw", font=("Verdana", 8)).grid(column = 2, 
-									row = s_counter + S_morescreens + 3, 
-									padx = 10, 
-									pady = 3,	
-         							sticky='NESW')   
+		ttk.Label(tab7, text = ScreenResText, anchor="nw", font=("Verdana", 8, "bold")).grid(column = 0, row = s_counter + S_morescreens + 2, padx = 10, pady = 3, sticky='NESW') 
+		ttk.Label(tab7, text = f"{s_width:,.0f} x {s_height:,.0f}", anchor="nw", font=("Verdana", 8)).grid(column = 1, row = s_counter + S_morescreens + 2, padx = 10, pady = 3, sticky='NESW')  
+		ttk.Label(tab7, text = PxText, anchor="nw", font=("Verdana", 8)).grid(column = 2, row = s_counter + S_morescreens + 2, padx = 10, pady = 3,	sticky='NESW')
+		ttk.Label(tab7, text = ScreenSizeText, anchor="nw", font=("Verdana", 8, "bold")).grid(column = 0, row = s_counter + S_morescreens + 3, padx = 10, pady = 3,	sticky='NESW') 
+		ttk.Label(tab7, text = f"{s_width_mm} x {s_height_mm}", anchor="nw", font=("Verdana", 8)).grid(column = 1, row = s_counter + S_morescreens + 3, padx = 10, pady = 3, sticky='NESW')   
+		ttk.Label(tab7, text = MmText, anchor="nw", font=("Verdana", 8)).grid(column = 2, row = s_counter + S_morescreens + 3, padx = 10, pady = 3,	sticky='NESW')   
     
-		ttk.Label(tab7, 
-				text = ScreenRatioText, anchor="nw", font=("Verdana", 8, "bold")).grid(column = 0, 
-									row = s_counter + S_morescreens + 4, 
-									padx = 10, 	
-									pady = 3,	
-         							sticky='NESW') 
-		ttk.Label(tab7, 
-				text = f"{simplified_width_ratio}:{simplified_height_ratio}", anchor="nw", font=("Verdana", 8)).grid(column = 1, 
-									row = s_counter + S_morescreens + 4, 
-									padx = 10, 
-									pady = 3,	
-         							sticky='NESW', 
-                					columnspan=2) 
+		ttk.Label(tab7, text = ScreenRatioText, anchor="nw", font=("Verdana", 8, "bold")).grid(column = 0, row = s_counter + S_morescreens + 4, padx = 10, pady = 3, sticky='NESW') 
+		ttk.Label(tab7, text = f"{simplified_width_ratio}:{simplified_height_ratio}", anchor="nw", font=("Verdana", 8)).grid(column = 1, row = s_counter + S_morescreens + 4, padx = 10, pady = 3, sticky='NESW', columnspan=2) 
     
 		
 		if s_primary:
@@ -1372,19 +936,8 @@ def main():
 		else:
 			s_primary = NoText
   
-		ttk.Label(tab7, 
-				text = ScreenPrimaryText, anchor="nw", font=("Verdana", 8, "bold")).grid(column = 0, 
-									row = s_counter + S_morescreens + 5, 
-									padx = 10, 	
-									pady = 3,	
-         							sticky='NESW') 
-		ttk.Label(tab7, 
-				text = s_primary, anchor="nw", font=("Verdana", 8)).grid(column = 1, 
-									row = s_counter + S_morescreens + 5, 
-									padx = 10, 
-									pady = 3,	
-         							sticky='NESW',
-                					columnspan=2) 
+		ttk.Label(tab7, text = ScreenPrimaryText, anchor="nw", font=("Verdana", 8, "bold")).grid(column = 0, row = s_counter + S_morescreens + 5, padx = 10, pady = 3, sticky='NESW') 
+		ttk.Label(tab7, text = s_primary, anchor="nw", font=("Verdana", 8)).grid(column = 1, row = s_counter + S_morescreens + 5, padx = 10, pady = 3, sticky='NESW', columnspan=2) 
     
     
     
@@ -1417,82 +970,30 @@ def main():
 		except Exception as e:
 			return False
 
-	ttk.Label(tab8, 
-        	text = MBTitleText, foreground="blue", font=("Verdana", 16, "bold")).grid(column = 0, 
-									row = 0, 
-									padx = 10, 
-									pady = 3,	
-         						#	sticky='NESW',
-                					columnspan=2)	
+	ttk.Label(tab8, text = MBTitleText, foreground="blue", font=("Verdana", 16, "bold")).grid(column = 0, row = 0, padx = 10, pady = 3,	columnspan=2)	
 
 
     # Get motherboard information
 	motherboard_info = get_motherboard_info()
 	# If the card dont return any info
 	if motherboard_info == False:
-		ttk.Label(tab8, 
-			text = MBNoInfText, anchor="n", font=("Verdana", 8, "bold")).grid(column = 0, 
-									row = 1, 
-									padx = 10, 	
-									pady = 3,	
-         							sticky='NESW',
-                					columnspan=2) 
+		ttk.Label(tab8, text = MBNoInfText, anchor="n", font=("Verdana", 8, "bold")).grid(column = 0, row = 1, padx = 10, pady = 3,	sticky='NESW', columnspan=2) 
 	else:
 		mb_prod_code = motherboard_info.get('Product', 'N/A')
 		mb_manufact = motherboard_info.get('Manufacturer', 'N/A')
 		mb_version = motherboard_info.get('Version', 'N/A')
 		mb_serial = motherboard_info.get('Serial Number', 'N/A')
   
-		ttk.Label(tab8, 
-				text = MBProductCodeText, anchor="nw", font=("Verdana", 8, "bold")).grid(column = 0, 
-										row = 1, 
-										padx = 10, 	
-										pady = 3,	
-										sticky='NESW')
-		ttk.Label(tab8, 
-				text = mb_prod_code, anchor="nw", font=("Verdana", 8)).grid(column = 1, 
-										row = 1, 
-										padx = 10, 
-										pady = 3,	
-										sticky='NESW')
+		ttk.Label(tab8, text = MBProductCodeText, anchor="nw", font=("Verdana", 8, "bold")).grid(column = 0, row = 1, padx = 10, pady = 3, sticky='NESW')
+		ttk.Label(tab8, text = mb_prod_code, anchor="nw", font=("Verdana", 8)).grid(column = 1, row = 1, padx = 10, pady = 3, sticky='NESW')
     
-		ttk.Label(tab8, 
-				text = MBManufacturerText, anchor="nw", font=("Verdana", 8, "bold")).grid(column = 0, 
-										row = 2, 
-										padx = 10, 	
-										pady = 3,	
-										sticky='NESW')
-		ttk.Label(tab8, 
-				text = mb_manufact, anchor="nw", font=("Verdana", 8)).grid(column = 1, 
-										row = 2, 
-										padx = 10, 
-										pady = 3,	
-										sticky='NESW')     
-		ttk.Label(tab8, 
-				text = MBVersionText, anchor="nw", font=("Verdana", 8, "bold")).grid(column = 0, 
-										row = 3, 
-										padx = 10, 	
-										pady = 3,	
-										sticky='NESW')
-		ttk.Label(tab8, 
-				text = mb_version, anchor="nw", font=("Verdana", 8)).grid(column = 1, 
-										row = 3, 
-										padx = 10, 
-										pady = 3,	
-										sticky='NESW')         
+		ttk.Label(tab8, text = MBManufacturerText, anchor="nw", font=("Verdana", 8, "bold")).grid(column = 0, row = 2, padx = 10, pady = 3,	sticky='NESW')
+		ttk.Label(tab8, text = mb_manufact, anchor="nw", font=("Verdana", 8)).grid(column = 1, row = 2, padx = 10, pady = 3, sticky='NESW')     
+		ttk.Label(tab8, text = MBVersionText, anchor="nw", font=("Verdana", 8, "bold")).grid(column = 0, row = 3, padx = 10, pady = 3, sticky='NESW')
+		ttk.Label(tab8, text = mb_version, anchor="nw", font=("Verdana", 8)).grid(column = 1, row = 3, padx = 10, pady = 3,	sticky='NESW')         
     
-		ttk.Label(tab8, 
-				text = MBSerialText, anchor="nw", font=("Verdana", 8, "bold")).grid(column = 0, 
-										row = 4, 
-										padx = 10, 	
-										pady = 3,	
-										sticky='NESW')
-		ttk.Label(tab8, 
-				text = mb_serial, anchor="nw", font=("Verdana", 8)).grid(column = 1, 
-										row = 4, 
-										padx = 10, 
-										pady = 3,	
-										sticky='NESW')         
+		ttk.Label(tab8, text = MBSerialText, anchor="nw", font=("Verdana", 8, "bold")).grid(column = 0, row = 4, padx = 10, pady = 3, sticky='NESW')
+		ttk.Label(tab8, text = mb_serial, anchor="nw", font=("Verdana", 8)).grid(column = 1, row = 4, padx = 10, pady = 3, sticky='NESW')         
     
 
 
@@ -1514,191 +1015,59 @@ def main():
 	pc_cur_user = my_system.UserName
 	
 	
-	ttk.Label(tab9, 
-        	text = PCTitleText, foreground="blue", font=("Verdana", 16, "bold")).grid(column = 0, 
-									row = 0, 
-									padx = 10, 
-									pady = 3,	
-         						#	sticky='NESW',
-                					columnspan=2)	
+	ttk.Label(tab9, text = PCTitleText, foreground="blue", font=("Verdana", 16, "bold")).grid(column = 0, row = 0, padx = 10, pady = 3,	columnspan=2)	
  
-	ttk.Label(tab9, 
-			text = PCManufacturerText, anchor="nw", font=("Verdana", 8, "bold")).grid(column = 0, 
-									row = 1, 
-									padx = 10, 	
-									pady = 3,	
-         							sticky='NESW')
-	ttk.Label(tab9, 
-			text = pc_manufacturer, anchor="nw", font=("Verdana", 8)).grid(column = 1, 
-									row = 1, 
-									padx = 10, 
-									pady = 3,	
-         							sticky='NESW') 
+	ttk.Label(tab9, text = PCManufacturerText, anchor="nw", font=("Verdana", 8, "bold")).grid(column = 0, row = 1, padx = 10, pady = 3,	sticky='NESW')
+	ttk.Label(tab9, text = pc_manufacturer, anchor="nw", font=("Verdana", 8)).grid(column = 1, row = 1, padx = 10, pady = 3, sticky='NESW') 
 
-	ttk.Label(tab9, 
-			text = PCModelText, anchor="nw", font=("Verdana", 8, "bold")).grid(column = 0, 
-									row = 2, 
-									padx = 10, 	
-									pady = 3,	
-         							sticky='NESW') # For machine type
-	ttk.Label(tab9, 
-			text = pc_model, anchor="nw", font=("Verdana", 8)).grid(column = 1, 
-									row = 2, 
-									padx = 10, 
-									pady = 3,	
-         							sticky='NESW') 
-	ttk.Label(tab9, 
-			text = PCNameText, anchor="nw", font=("Verdana", 8, "bold")).grid(column = 0, 
-									row = 3, 
-									padx = 10, 	
-									pady = 3,	
-         							sticky='NESW') # For machine type
-	ttk.Label(tab9, 
-			text = pc_name, anchor="nw", font=("Verdana", 8)).grid(column = 1, 
-									row = 3, 
-									padx = 10, 
-									pady = 3,	
-         							sticky='NESW') 
-	ttk.Label(tab9, 
-			text = PCSysTypeText, anchor="nw", font=("Verdana", 8, "bold")).grid(column = 0, 
-									row = 4, 
-									padx = 10, 	
-									pady = 3,	
-         							sticky='NESW') # For machine type
-	ttk.Label(tab9, 
-			text = pc_system_type, anchor="nw", font=("Verdana", 8)).grid(column = 1, 
-									row = 4, 
-									padx = 10, 
-									pady = 3,	
-         							sticky='NESW')
-	ttk.Label(tab9, 
-			text = PCSysFamilyText, anchor="nw", font=("Verdana", 8, "bold")).grid(column = 0, 
-									row = 5, 
-									padx = 10, 	
-									pady = 3,	
-         							sticky='NESW') # For machine type
-	ttk.Label(tab9, 
-			text = pc_sys_family, anchor="nw", font=("Verdana", 8)).grid(column = 1, 
-									row = 5, 
-									padx = 10, 
-									pady = 3,	
-         							sticky='NESW')
-	ttk.Label(tab9, 
-			text = PCSysNumProcText, anchor="nw", font=("Verdana", 8, "bold")).grid(column = 0, 
-									row = 6, 
-									padx = 10, 	
-									pady = 3,	
-         							sticky='NESW') # For machine type
-	ttk.Label(tab9, 
-			text = pc_processors, anchor="nw", font=("Verdana", 8)).grid(column = 1, 
-									row = 6, 
-									padx = 10, 
-									pady = 3,	
-         							sticky='NESW')
+	ttk.Label(tab9, text = PCModelText, anchor="nw", font=("Verdana", 8, "bold")).grid(column = 0, row = 2, padx = 10, pady = 3, sticky='NESW')
+	ttk.Label(tab9, text = pc_model, anchor="nw", font=("Verdana", 8)).grid(column = 1, row = 2, padx = 10, pady = 3, sticky='NESW') 
+	ttk.Label(tab9, text = PCNameText, anchor="nw", font=("Verdana", 8, "bold")).grid(column = 0, row = 3, padx = 10, pady = 3,	sticky='NESW')
+	ttk.Label(tab9, text = pc_name, anchor="nw", font=("Verdana", 8)).grid(column = 1, row = 3, padx = 10, pady = 3, sticky='NESW') 
+	ttk.Label(tab9, text = PCSysTypeText, anchor="nw", font=("Verdana", 8, "bold")).grid(column = 0, row = 4, padx = 10, pady = 3, sticky='NESW') 
+	ttk.Label(tab9, text = pc_system_type, anchor="nw", font=("Verdana", 8)).grid(column = 1, row = 4, padx = 10, pady = 3, sticky='NESW')
+	ttk.Label(tab9, text = PCSysFamilyText, anchor="nw", font=("Verdana", 8, "bold")).grid(column = 0, row = 5, padx = 10, pady = 3, sticky='NESW') 
+	ttk.Label(tab9, text = pc_sys_family, anchor="nw", font=("Verdana", 8)).grid(column = 1, row = 5, padx = 10, pady = 3, sticky='NESW')
+	ttk.Label(tab9, text = PCSysNumProcText, anchor="nw", font=("Verdana", 8, "bold")).grid(column = 0, row = 6, padx = 10, pady = 3, sticky='NESW') 
+	ttk.Label(tab9, text = pc_processors, anchor="nw", font=("Verdana", 8)).grid(column = 1, row = 6, padx = 10, pady = 3, sticky='NESW')
    
-	tk.Label(tab9, 
-			text = PCSysNumLogProcText, anchor="nw", font=("Verdana", 8, "bold")).grid(column = 0, 
-									row = 7, 
-									padx = 10, 	
-									pady = 3,	
-         							sticky='NESW') # For machine type
-	ttk.Label(tab9, 
-			text = pc_log_processors, anchor="nw", font=("Verdana", 8)).grid(column = 1, 
-									row = 7, 
-									padx = 10, 
-									pady = 3,	
-         							sticky='NESW')
+	tk.Label(tab9, text = PCSysNumLogProcText, anchor="nw", font=("Verdana", 8, "bold")).grid(column = 0, row = 7, padx = 10, pady = 3, sticky='NESW') 
+	ttk.Label(tab9, text = pc_log_processors, anchor="nw", font=("Verdana", 8)).grid(column = 1, row = 7, padx = 10, pady = 3, sticky='NESW')
 	# Fetching the «Universally Unique Identifier» of the pc
 	UUID = uuid.UUID(int=uuid.getnode())
 	
-	tk.Label(tab9, 
-			text = PCUIIDText, anchor="nw", font=("Verdana", 8, "bold")).grid(column = 0, 
-									row = 8, 
-									padx = 10, 	
-									pady = 3,	
-         							sticky='NESW') # For machine type
-	ttk.Label(tab9, 
-			text = UUID, anchor="nw", font=("Verdana", 8)).grid(column = 1, 
-									row = 8, 
-									padx = 10, 
-									pady = 3,	
-         							sticky='NESW')
+	tk.Label(tab9, text = PCUIIDText, anchor="nw", font=("Verdana", 8, "bold")).grid(column = 0, row = 8, padx = 10, pady = 3, sticky='NESW')
+	ttk.Label(tab9, text = UUID, anchor="nw", font=("Verdana", 8)).grid(column = 1, row = 8, padx = 10, pady = 3, sticky='NESW')
 
 
-	tk.Label(tab9, 
-			text = PCCurUserText, anchor="nw", font=("Verdana", 8, "bold")).grid(column = 0, 
-									row = 9, 
-									padx = 10, 	
-									pady = 3,	
-         							sticky='NESW') # For machine type
-	ttk.Label(tab9, 
-			text = pc_cur_user, anchor="nw", font=("Verdana", 8)).grid(column = 1, 
-									row = 9, 
-									padx = 10, 
-									pady = 3,	
-         							sticky='NESW')
+	tk.Label(tab9, text = PCCurUserText, anchor="nw", font=("Verdana", 8, "bold")).grid(column = 0, row = 9, padx = 10, pady = 3, sticky='NESW')
+	ttk.Label(tab9, text = pc_cur_user, anchor="nw", font=("Verdana", 8)).grid(column = 1, row = 9, padx = 10, pady = 3, sticky='NESW')
 
 
 
   
 #############
 # About 
-	ttk.Label(tab10, 
-		text ="InfoWinApp\n", foreground="blue", font=("Verdana", 16, "bold")).grid(column = 0, 
-									row = 0, 
-									padx = 10, 
-									pady = 3,	
-         						#	sticky='NESW',
-                					columnspan=2)
-	ttk.Label(tab10, 
-		text = CopyleftText, font=("Verdana", 8, "bold")).grid(column = 0, 
-									row = 1, 
-									padx = 10, 
-									pady = 3,	
-         							#sticky='NESW',
-                					columnspan=2) 
-	ttk.Label(tab10, 
-		text = LicenseText, anchor="nw", font=("Verdana", 8, "bold")).grid(column = 0, 
-									row = 2, 
-									padx = 10, 
-									pady = 3,	
-         							sticky='NESW')
-	ttk.Label(tab10, 
-		text = LicenseTypeText, anchor="nw").grid(column = 1, 
-									row = 2, 
-									padx = 10, 
-									pady = 3,	
-         							sticky='NESW') 
-	ttk.Label(tab10, 
-		text = VersionText, anchor="nw", font=("Verdana", 8, "bold")).grid(column = 0, 
-									row = 3, 
-									padx = 10, 
-									pady = 3,	
-         							sticky='NESW') 
+	ttk.Label(tab10, text ="InfoWinApp\n", foreground="blue", font=("Verdana", 16, "bold")).grid(column = 0, row = 0, padx = 10, pady = 3, columnspan=2)
+	ttk.Label(tab10, text = CopyleftText, font=("Verdana", 8, "bold")).grid(column = 0, row = 1, padx = 10, pady = 3, columnspan=2) 
+	ttk.Label(tab10, text = LicenseText, anchor="nw", font=("Verdana", 8, "bold")).grid(column = 0, row = 2, padx = 10, pady = 3, sticky='NESW')
+	ttk.Label(tab10, text = LicenseTypeText, anchor="nw").grid(column = 1, row = 2, padx = 10, pady = 3, sticky='NESW') 
+	ttk.Label(tab10, text = VersionText, anchor="nw", font=("Verdana", 8, "bold")).grid(column = 0, row = 3, padx = 10, pady = 3, sticky='NESW') 
 	
 	def open_url(event):
 		webbrowser.open("https://prog.nalle.no")
 
 	
 	StaticLabel = ttk.Label(tab10, text = SourceCodeText, font=("Verdana", 8))
-	StaticLabel.grid(column = 0, 
-									row = 4, 
-									padx = 10, 
-									pady = 3,	
-         							sticky='NESW')
+	StaticLabel.grid(column = 0, row = 4, padx = 10, pady = 3, sticky='NESW')
 
 	URLLabel = ttk.Label(tab10, text="https://prog.nalle.no", font=("Verdana", 8), foreground="Blue", cursor="Hand2")
 	URLLabel.grid(column=1, row=4, padx=10, pady=3, sticky='NESW', columnspan=2)
 	URLLabel.bind("<Button-1>", open_url)
 
-	ttk.Label(tab10, 
-		text = AppVersion, font=("Verdana", 8), anchor="nw").grid(column = 1, 
-									row = 3, 
-									padx = 10, 
-									pady = 3,	
-         							sticky='NESW') 
+	ttk.Label(tab10, text = AppVersion, font=("Verdana", 8), anchor="nw").grid(column = 1, row = 3, padx = 10, pady = 3, sticky='NESW') 
 
 	Window.mainloop() 
 
 if __name__ == "__main__":
-    main()
+	main()
