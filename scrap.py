@@ -1,26 +1,37 @@
-import subprocess
+import winreg
 
-    def get_processor_name():
-        try:
-            # Use PowerShell to get the processor name
-            command = 'powershell -command "Get-WmiObject Win32_Processor | Select-Object -ExpandProperty Name"'
-            output = subprocess.check_output(
-                command, 
-                shell=True, 
-                stderr=subprocess.STDOUT, 
-                universal_newlines=True
-            )
-            
-            # Extract the processor name from the output
-            processor_name = output.strip()
-            return processor_name
-        except Exception as e:
-            print(f"Error retrieving processor name: {e}")
-            return "Unknown"
+def get_windows_license_key():
+    try:
+        # Open the registry key where the product ID is stored
+        registry_key = winreg.OpenKey(
+            winreg.HKEY_LOCAL_MACHINE,
+            r"SOFTWARE\Microsoft\Windows NT\CurrentVersion"
+        )
+        
+        # Read the binary DigitalProductId value
+        digital_product_id, _ = winreg.QueryValueEx(registry_key, "DigitalProductId")
+        winreg.CloseKey(registry_key)
+        
+        # Decode the binary data into the product key
+        charset = "BCDFGHJKMPQRTVWXY2346789"  # Valid characters for the key
+        product_key = []
+        
+        # Decode the 25-character key from the binary data
+        for i in range(24, -1, -1):
+            digit = 0
+            for j in range(14, -1, -1):
+                digit = (digit << 8) | digital_product_id[52 + j]
+                digital_product_id = bytearray(digital_product_id)
+                digital_product_id[52 + j] = digit // 24
+                digit %= 24
+            product_key.append(charset[digit])
+        
+        # Format the key with dashes
+        return '-'.join([''.join(product_key[::-1][i:i+5]) for i in range(0, 25, 5)])
+    
+    except Exception as e:
+        return f"Error retrieving key: {e}"
 
-def main():
-    processor_name = get_processor_name()
-    print(f"Processor: {processor_name}")
-
-if __name__ == "__main__":
-    main()
+# Print the result
+winkey = get_windows_license_key()
+print (winkey)

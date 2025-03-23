@@ -11,7 +11,7 @@ Tab6Text = "Grafikkort |"
 Tab7Text = "Skjerm |"
 Tab8Text = "Hovedkort |"
 Tab9Text = "PC-en |"
-Tab10Text = "Om MiniInfo"
+Tab10Text = "Om InfoWinApp"
 
 
 # Network tab
@@ -111,6 +111,7 @@ OSVersionText ="Versjon:"
 ForMachineTypeText = "For maskintype:"
 OSLanguageText = "Operaticsystem\nspråk:"
 OSCodePageText = "Windows kodetabell:"
+OSLicenseKeyText = "Lisensnøkkel:"
 
 # Graphic card
 GraphicTitleText = "Grafikkort"

@@ -104,12 +104,15 @@ DiskIDText = "Disk "
 DiskDevIDText = "Disk "
 DiskDeviceHelathStaus1Text = "Health status for disk "
 DiskDeviceHelathStaus2Text = " "
-OperatingSystemTitleText = "Operating system\n"
-OperatingSystemText = "Operating system"
-OSVersionText ="Version"
-ForMachineTypeText = "For machine type"
-OSLanguageText = "Operating system\nlanguage"
-OSCodePageText = "Windows code page"
+
+# Operating system
+OperatingSystemTitleText = "Operating system:"
+OperatingSystemText = "Operating system:"
+OSVersionText ="Version:"
+ForMachineTypeText = "For machine type:"
+OSLanguageText = "Operating system\nlanguage:"
+OSCodePageText = "Windows code page:"
+OSLicenseKeyText = "License key:"
 
 # Graphic card
 GraphicTitleText = "Graphic card"

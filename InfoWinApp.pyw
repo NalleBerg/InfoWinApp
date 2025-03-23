@@ -1,6 +1,6 @@
 # Copyleft Nalle Berg 2025
 # License GPL V2
-AppVersion = '0.9.7'
+AppVersion = '0.9.8'
 # Importing modules
 import tkinter as tk					 
 from tkinter import ttk
@@ -74,6 +74,42 @@ def get_windows_version():
     except Exception as e:
         return f"Unknown - Error: {e}"
 versionOS = get_windows_version()
+
+# Windows license foe the OS-tab
+def get_windows_license_key():
+    try:
+        # Open the registry key where the product ID is stored
+        registry_key = winreg.OpenKey(
+            winreg.HKEY_LOCAL_MACHINE,
+            r"SOFTWARE\Microsoft\Windows NT\CurrentVersion"
+        )
+        
+        # Read the binary DigitalProductId value
+        digital_product_id, _ = winreg.QueryValueEx(registry_key, "DigitalProductId")
+        winreg.CloseKey(registry_key)
+        
+        # Decode the binary data into the product key
+        charset = "BCDFGHJKMPQRTVWXY2346789"  # Valid characters for the key
+        product_key = []
+        
+        # Decode the 25-character key from the binary data
+        for i in range(24, -1, -1):
+            digit = 0
+            for j in range(14, -1, -1):
+                digit = (digit << 8) | digital_product_id[52 + j]
+                digital_product_id = bytearray(digital_product_id)
+                digital_product_id[52 + j] = digit // 24
+                digit %= 24
+            product_key.append(charset[digit])
+        
+        # Format the key with dashes
+        return '-'.join([''.join(product_key[::-1][i:i+5]) for i in range(0, 25, 5)])
+    
+    except Exception as e:
+        return f"Error retrieving key: {e}"
+
+# Print the result
+winkey = get_windows_license_key()
 
 # Making the app know it's path.
 def resource_path(relative_path):
@@ -755,6 +791,8 @@ def main():
 	ttk.Label(tab5, text = loc[0], anchor="nw", font=("Verdana", 8)).grid(column = 1, row = 4, padx = 10, pady = 3,	sticky='NESW')  
 	ttk.Label(tab5, text = OSCodePageText, anchor="nw", font=("Verdana", 8, "bold")).grid(column = 0, row = 5, padx = 10, pady = 3,	sticky='NESW') # For machine type
 	ttk.Label(tab5, text = enc, anchor="nw", font=("Verdana", 8)).grid(column = 1, row = 5, padx = 10, pady = 3, sticky='NESW') 
+	ttk.Label(tab5, text = OSLicenseKeyText, anchor="nw", font=("Verdana", 8, "bold")).grid(column = 0, row = 6, padx = 10, pady = 3,	sticky='NESW') # For machine type
+	ttk.Label(tab5, text = winkey, anchor="nw", font=("Verdana", 8)).grid(column = 1, row = 6, padx = 10, pady = 3, sticky='NESW') 
    
 ###############
 # Graphics page
