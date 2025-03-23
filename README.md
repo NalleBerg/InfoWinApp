@@ -1,10 +1,12 @@
 This is a simple system information program I made to learn Python. I am working together with any AI that would answer, but mostly wirt Aria (Opera's AI), Deep Seek and GitHub, the one you'll find in Visual Studio Community,
 
-###########################################################
+###################################################
+
 Copyleft 2025 Nalle Berg
 License : GPL v2
 URL: https://www.gnu.org/licenses/old-licenses/gpl-2.0.html
-###########################################################
+
+###################################################
 
 This program tries to simplifie the system info. Having as much info as possible there and having live (one seconds polls) info where possible.
 
