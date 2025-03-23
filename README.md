@@ -13,3 +13,5 @@ But I am not there yet :)
 
 The code works fine, but I am still in the process of adding features, so I haven't had time yet to add the explanatory question marks for the help pop-ups.
 
+It's written in Python and python executables can be slow in the start-up since it uses a JIT (Just In Time) compiler. Once it has started it's fast enough.
+
