@@ -3,7 +3,9 @@ This is a simple system information program I made to learn Python. I am working
 ###################################################
 
 Copyleft 2025 Nalle Berg
+
 License : GPL v2
+
 URL: https://www.gnu.org/licenses/old-licenses/gpl-2.0.html
 
 ###################################################
