@@ -11,3 +11,5 @@ This prgram tries to simplifie the system info. Having as much as possible there
 The goal is to make the program as informative as possible with help pop-ups for all info.
 But I am not there yet :)
 
+The code works fine, but I am still in the process of adding features, so I haven't had time yet to add the explanatory question marks for the help pop-ups.
+
